@@ -106,12 +106,12 @@ textarea.in{resize:vertical;line-height:1.6}
 'use strict';
 /* ================== الإعدادات ================== */
 const DB_ROOT = 'https://jadwal-almanzil-default-rtdb.firebaseio.com/g6';
-const FAM_HOME = 'bayt';          // رمز عائلة البيت — يشير للبيانات الأصلية بدون نقل
+const FAM_HOME = 'noor';          // رمز عائلة البيت — للتمييز بصفحة الإدارة فقط
 let DB = DB_ROOT;                 // يتحدد بعد معرفة رمز العائلة
 const LS = 'g6:';
 /* رمز العائلة: كل عائلة لها فرع مستقل بقاعدة البيانات */
 function cleanFam(s){ return String(s||'').trim().toLowerCase().replace(/[^a-z0-9-]/g,'').slice(0,24) || null; }
-function setDB(fam){ DB = (fam === FAM_HOME) ? DB_ROOT : DB_ROOT + '/f/' + fam; }
+function setDB(fam){ DB = DB_ROOT + '/f/' + fam; }   // كل عائلة بفرعها الخاص، بلا استثناء
 function getFam(){
   const q = cleanFam(new URLSearchParams(location.search).get('f'));
   if (q) { lsSet('fam', q); try { history.replaceState(null, '', location.pathname); } catch(e){} return q; }

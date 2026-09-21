@@ -39,7 +39,8 @@ a{color:var(--teal)}
 <script>
 'use strict';
 const DB_ROOT = 'https://jadwal-almanzil-default-rtdb.firebaseio.com/g6';
-const FAM_HOME = 'bayt';
+const FAM_HOME = 'noor';
+
 const AR = s => String(s).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const app = document.getElementById('app');
@@ -136,7 +137,7 @@ function copyText(t){
 }
 async function resetPin(code){
   if (!confirm('تصفير الرمز السري لواجهة الأم عند «' + code + '»؟\n\nأول مرة تدخل الأم بعدها راح يطلب منها تختار رمزاً جديداً. بيانات العائلة ما تتأثر.')) return;
-  const base = (code === FAM_HOME) ? DB_ROOT : DB_ROOT + '/f/' + encodeURIComponent(code);
+  const base = DB_ROOT + '/f/' + encodeURIComponent(code);
   try {
     const r = await fetch(base + '/settings/pin.json', { method: 'DELETE' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
