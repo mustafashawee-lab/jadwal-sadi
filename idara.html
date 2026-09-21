@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>إدارة العوائل</title>
 <meta name="theme-color" content="#F0B37E">
+<link rel="manifest" href="manifest-idara.json">
 <link rel="icon" href="icon-idara-192.png">
 <link rel="apple-touch-icon" href="icon-idara-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -153,6 +154,7 @@ async function delFam(code){
   } catch(e) { alert('ما انحذف: ' + e.message); }
 }
 load();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
 </html>
