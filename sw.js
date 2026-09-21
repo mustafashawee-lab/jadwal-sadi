@@ -1,6 +1,6 @@
 // خدمة العمل بدون إنترنت: الواجهة تنحفظ عند التثبيت، وصفحات الكتاب تنحفظ أول ما تنفتح
-const CACHE = 'g6-v10';
-const SHELL = ['./', './index.html', './manifest.json', './idara.html', './manifest-idara.json', './icon-idara-192.png', './icon-idara-512.png', './data/isl.json', './data/ar.json', './data/math.json', './data/sci.json', './data/soc.json', './data/gram.json', './data/en.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'g6-v11';
+const SHELL = ['./', './index.html', './manifest.json', './idara.html', './idara/', './idara/index.html', './idara/manifest.json', './icon-idara-192.png', './icon-idara-512.png', './data/isl.json', './data/ar.json', './data/math.json', './data/sci.json', './data/soc.json', './data/gram.json', './data/en.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
