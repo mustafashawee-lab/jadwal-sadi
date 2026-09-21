@@ -1,5 +1,5 @@
 // خدمة العمل بدون إنترنت: الواجهة تنحفظ عند التثبيت، وصفحات الكتاب تنحفظ أول ما تنفتح
-const CACHE = 'g6-v8';
+const CACHE = 'g6-v9';
 const SHELL = ['./', './index.html', './manifest.json', './data/isl.json', './data/ar.json', './data/math.json', './data/sci.json', './data/soc.json', './data/gram.json', './data/en.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
