@@ -1,0 +1,18 @@
+{
+  "id": "/idara/",
+  "name": "إدارة العوائل — جدول القراءة",
+  "short_name": "إدارة",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "dir": "rtl",
+  "lang": "ar",
+  "background_color": "#F6F1E8",
+  "theme_color": "#F0B37E",
+  "icons": [
+    { "src": "../icon-idara-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "../icon-idara-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "../icon-idara-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "../icon-idara-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

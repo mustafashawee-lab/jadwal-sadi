@@ -1,1 +1,160 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>إدارة العوائل</title>
+<meta name="theme-color" content="#F0B37E">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="../icon-idara-192.png">
+<link rel="apple-touch-icon" href="../icon-idara-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Reem+Kufi:wght@600;700&display=swap">
+<style>
+:root{--bg:#F6F1E8;--card:#FFFDF8;--line:#E4DACA;--muted:#5B6668;--ink:#1E2A2B;--deep:#1E3A3A;--deep2:#2A4B4A;--amber:#F0B37E;--teal:#0E6B63;--tealbg:#E2F0EA;--warn:#9A3412;--warnbg:#FBE3D3}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;font-size:15px}
+.wrap{max-width:720px;margin:0 auto;padding:20px 16px 60px}
+h1{font-family:'Reem Kufi',sans-serif;font-size:26px;margin:0}
+.head{background:var(--deep);color:#F6F1E8;border-radius:18px;padding:18px;margin-bottom:16px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.stat{background:var(--deep2);border-radius:12px;padding:10px;text-align:center}
+.stat b{display:block;font-size:20px;color:var(--amber)}
+.stat span{font-size:11px;color:#C9D6D3}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.muted{color:var(--muted)}.small{font-size:12.5px}.xs{font-size:11px}
+.chip{display:inline-flex;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600}
+.btn{min-height:42px;border:0;border-radius:11px;padding:0 14px;font-weight:700;background:var(--teal);color:#fff;font-family:inherit;font-size:14px;cursor:pointer}
+.btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.in{width:100%;height:46px;border:1px solid var(--line);border-radius:11px;padding:0 12px;background:var(--card);font-family:inherit;font-size:15px}
+code{background:#EFE8DB;padding:2px 7px;border-radius:6px;font-size:13px;direction:ltr;display:inline-block}
+a{color:var(--teal)}
+.empty{padding:30px;text-align:center;color:var(--muted);border:1px dashed #CFC4B1;border-radius:14px;line-height:1.8}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+'use strict';
+const DB_ROOT = 'https://jadwal-almanzil-default-rtdb.firebaseio.com/g6';
+const FAM_HOME = 'noor';
 
+const AR = s => String(s).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const app = document.getElementById('app');
+
+function ago(ts){
+  if (!ts) return '—';
+  const m = Math.floor((Date.now() - ts) / 60000);
+  if (m < 1) return 'الآن';
+  if (m < 60) return 'قبل ' + AR(m) + ' دقيقة';
+  const h = Math.floor(m / 60);
+  if (h < 24) return 'قبل ' + AR(h) + ' ساعة';
+  const d = Math.floor(h / 24);
+  if (d === 1) return 'امس';
+  if (d < 30) return 'قبل ' + AR(d) + ' يوم';
+  return 'قبل ' + AR(Math.floor(d / 30)) + ' شهر';
+}
+const origin = () => new URL('../', location.href).href;   // التطبيق بجذر الموقع، والإدارة بمجلد فرعي
+
+async function load(){
+  app.innerHTML = '<div class="card">جاري التحميل…</div>';
+  let fams = {}, err = null;
+  try {
+    const r = await fetch(DB_ROOT + '/families.json');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    fams = (await r.json()) || {};
+  } catch(e) { err = e.message; }
+
+  const list = Object.entries(fams).map(([code, v]) => ({ code, ...(v || {}) }))
+                     .sort((a, b) => (b.last || 0) - (a.last || 0));
+  const DAY = 86400000;
+  const active = list.filter(x => x.last && Date.now() - x.last < 3 * DAY).length;
+  const week = list.filter(x => x.last && Date.now() - x.last < 7 * DAY).length;
+
+  app.innerHTML = `
+  <div class="head">
+    <div class="row between"><h1>إدارة العوائل</h1><button class="btn" style="background:var(--deep2);font-size:12px;font-weight:500" onclick="load()">تحديث</button></div>
+    <div class="stats">
+      <div class="stat"><b>${AR(list.length)}</b><span>عائلة مسجّلة</span></div>
+      <div class="stat"><b>${AR(active)}</b><span>نشطة آخر ٣ أيام</span></div>
+      <div class="stat"><b>${AR(week)}</b><span>نشطة هذا الأسبوع</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row between" style="margin-bottom:10px"><b>إنشاء رابط لعائلة</b></div>
+    <div class="row" style="gap:8px">
+      <input class="in grow" id="newFam" placeholder="رمز العائلة (إنكليزي وأرقام)" autocapitalize="off" spellcheck="false">
+      <button class="btn" onclick="makeLink()">توليد</button>
+    </div>
+    <div id="linkOut" class="small" style="margin-top:10px"></div>
+  </div>
+
+  ${err ? `<div class="card" style="background:var(--warnbg);border-color:#E9C6AC"><b style="color:var(--warn)">ما وصلت قاعدة البيانات</b><div class="small" style="margin-top:6px">${esc(err)} — تأكد من الاتصال بالإنترنت.</div></div>` : ''}
+
+  ${list.length ? list.map(f => {
+    const isHome = f.code === FAM_HOME;
+    const fresh = f.last && Date.now() - f.last < 3 * DAY;
+    return `<div class="card">
+      <div class="row between">
+        <div class="grow">
+          <div class="row" style="gap:8px"><b style="font-size:16px">${esc(f.name || f.code)}</b>
+            ${isHome ? '<span class="chip" style="background:var(--tealbg);color:var(--teal)">عائلتك</span>' : ''}
+            <span class="chip" style="background:${fresh ? 'var(--tealbg)' : '#EFE8DB'};color:${fresh ? 'var(--teal)' : 'var(--muted)'}">${ago(f.last)}</span>
+          </div>
+          <div class="small muted" style="margin-top:6px">الرمز: <code>${esc(f.code)}</code></div>
+          <div class="xs muted" style="margin-top:4px">أول استعمال: ${f.first ? ago(f.first) : '—'}</div>
+        </div>
+      </div>
+      <div class="row" style="gap:8px;margin-top:10px">
+        <button class="btn ghost grow" onclick="copyLink('${esc(f.code)}')">نسخ الرابط</button>
+        <button class="btn ghost" onclick="resetPin('${esc(f.code)}')">تصفير الرمز السري</button>
+        <button class="btn ghost" onclick="delFam('${esc(f.code)}')" style="color:#B42318">حذف</button>
+      </div>
+    </div>`;
+  }).join('') : (err ? '' : '<div class="empty">ماكو عوائل مسجّلة لحد الآن.<br>العائلة تنسجّل تلقائياً أول ما تفتح التطبيق بالرمز مالتها.</div>')}
+
+  <div class="card" style="background:#FFF7ED;border-color:#F3D9BC">
+    <b class="small">ملاحظة أمنية</b>
+    <div class="xs muted" style="margin-top:6px;line-height:1.9">هذي الصفحة ما تحميها كلمة سر — أي أحد يعرف عنوانها يشوف رموز العوائل. قاعدة البيانات نفسها مفتوحة للقراءة والكتابة، فالحماية الحقيقية تحتاج تفعيل قواعد Firebase مع تسجيل دخول. لا تنشر عنوان هذي الصفحة.</div>
+  </div>`;
+}
+
+function makeLink(){
+  const v = (document.getElementById('newFam').value || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24);
+  const out = document.getElementById('linkOut');
+  if (!v || v.length < 3) { out.innerHTML = '<span style="color:var(--warn)">اكتب رمزاً من ٣ حروف فأكثر</span>'; return; }
+  const url = origin() + '?f=' + v;
+  out.innerHTML = `<div class="row between" style="gap:8px"><code class="grow" style="overflow:auto">${esc(url)}</code><button class="btn" onclick="copyText('${esc(url)}')">نسخ</button></div>
+    <div class="xs muted" style="margin-top:8px">أرسل هذا الرابط لأهل الطالبة. يفتح التطبيق ويسجّل العائلة تلقائياً بدون ما يكتبون الرمز.</div>`;
+}
+function copyLink(code){ copyText(origin() + '?f=' + code); }
+function copyText(t){
+  navigator.clipboard?.writeText(t).then(() => alert('انتسخ الرابط:\n' + t)).catch(() => prompt('انسخ الرابط:', t));
+}
+async function resetPin(code){
+  if (!confirm('تصفير الرمز السري لواجهة الأم عند «' + code + '»؟\n\nأول مرة تدخل الأم بعدها راح يطلب منها تختار رمزاً جديداً. بيانات العائلة ما تتأثر.')) return;
+  const base = DB_ROOT + '/f/' + encodeURIComponent(code);
+  try {
+    const r = await fetch(base + '/settings/pin.json', { method: 'DELETE' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    alert('انصفّر الرمز. خلّي الأم تفتح التطبيق وتختار رمزاً جديداً.');
+  } catch(e) { alert('ما انصفّر: ' + e.message); }
+}
+async function delFam(code){
+  if (code === FAM_HOME) { alert('ما ينحذف — هذا رمز عائلتك.'); return; }
+  if (!confirm('حذف «' + code + '» من القائمة؟\n\nينحذف من قائمة الإدارة بس — بيانات العائلة (الجدول والدرجات) تبقى محفوظة، ولو فتحوا التطبيق يرجع يسجّلهم.')) return;
+  try {
+    await fetch(DB_ROOT + '/families/' + encodeURIComponent(code) + '.json', { method: 'DELETE' });
+    load();
+  } catch(e) { alert('ما انحذف: ' + e.message); }
+}
+load();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('../sw.js').catch(() => {});
+</script>
+</body>
+</html>
