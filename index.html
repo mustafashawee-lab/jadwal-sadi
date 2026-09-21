@@ -700,7 +700,8 @@ function momScreen(){
       </div>
       <button class="btn amber grow" style="height:44px" data-act="saveAdvSettings">حفظ الإعدادات</button>
       <span class="xs muted" style="line-height:1.7">لمن تغيّرين وقت القراءة، الجلسات الخمس تنعدّل أطوالها تلقائياً. وقت النوم والقراءة يوصلون لجهاز البنت. شكل الواجهة يخص جهازك بس — البنت ماتشوف هذا الخيار.</span>
-      <div class="row between" style="border-top:1px solid var(--line);padding-top:10px"><span class="small muted">رمز العائلة: <b>${esc(lsGet('fam','—'))}</b></span><button class="btn ghost" style="min-height:36px;font-size:12px" data-act="switchFam">تبديل الرمز</button></div>
+      <div class="row between" style="border-top:1px solid var(--line);padding-top:10px"><span class="small muted">🔒 الرمز السري لواجهة الأم</span><button class="btn ghost" style="min-height:36px;font-size:12px" data-act="pinChange">تغيير الرمز</button></div>
+      <div class="row between"><span class="small muted">رمز العائلة: <b>${esc(lsGet('fam','—'))}</b></span><button class="btn ghost" style="min-height:36px;font-size:12px" data-act="switchFam">تبديل الرمز</button></div>
     </div>
   </div>`;
 }
@@ -708,7 +709,20 @@ function momScreen(){
 /* ---------- الطبقات (نوافذ) ---------- */
 function layer(){
   const L = document.getElementById('layer'); let h = '';
-  if (ui.zoom) h = `<div class="zoom" data-act="zoomOff"><button class="close" data-act="zoomOff" aria-label="إغلاق">✕</button><img src="${ui.zoom}" alt=""></div>`;
+  if (ui.pinSet) h = `<div class="overlay"><div class="sheet col g12" data-stop="1">
+    <h2>رمز واجهة الأم</h2>
+    <span class="small muted" style="line-height:1.8">اختاري رمزاً من ٤ أرقام. راح يُطلب كل مرة يدخل بيها أحد على واجهة الأم — حتى البنت ما تقدر تفتحها وتغيّر الإعدادات.</span>
+    <input class="in" id="pin1" type="password" inputmode="numeric" maxlength="8" placeholder="الرمز الجديد" style="text-align:center;font-size:20px;letter-spacing:6px;height:52px">
+    <input class="in" id="pin2" type="password" inputmode="numeric" maxlength="8" placeholder="أعيدي كتابته" style="text-align:center;font-size:20px;letter-spacing:6px;height:52px">
+    <div class="row g8"><button class="btn grow" data-act="pinSetSave">حفظ ودخول</button><button class="btn ghost" data-act="pinCancel">إلغاء</button></div>
+    <span class="xs muted">احفظي الرمز — لو نسيتيه يتصفّر من صفحة الإدارة.</span></div></div>`;
+  else if (ui.pinAsk) h = `<div class="overlay"><div class="sheet col g12" data-stop="1">
+    <h2>واجهة الأم</h2>
+    <span class="small muted">اكتبي الرمز السري للدخول.</span>
+    <input class="in" id="pinIn" type="password" inputmode="numeric" maxlength="8" placeholder="••••" autofocus style="text-align:center;font-size:24px;letter-spacing:8px;height:56px">
+    ${ui.pinAsk.tries ? `<span class="small" style="color:var(--err)">الرمز غلط — محاولة ${AR(ui.pinAsk.tries)}</span>` : ''}
+    <div class="row g8"><button class="btn grow" data-act="pinCheck">دخول</button><button class="btn ghost" data-act="pinCancel">رجوع</button></div></div></div>`;
+  else if (ui.zoom) h = `<div class="zoom" data-act="zoomOff"><button class="close" data-act="zoomOff" aria-label="إغلاق">✕</button><img src="${ui.zoom}" alt=""></div>`;
   else if (ui.hwForm) h = `<div class="overlay" data-act="sheetOff"><div class="sheet col g12" data-stop="1"><h2>واجب جديد</h2>
     <label class="f">المادة<select class="in" id="hwSub">${Object.entries(SUBJ).map(([k,s]) => `<option value="${k}">${s.n}</option>`).join('')}</select></label>
     <label class="f">الواجب<input class="in" id="hwDesc" placeholder="مثلاً: حل تمارين صفحة ١٢"></label>
@@ -745,7 +759,43 @@ document.addEventListener('click', async e => {
       if (!confirm('تبديل رمز العائلة؟ راح يطلب منك الرمز من جديد على هذا الجهاز.')) break;
       lsSet('fam', null); lsSet('role', null); lsSet('famReg', false);
       S = {}; lsSet('state', S); location.reload(); break; }
-    case 'role': lsSet('role', v); view = 'today'; render(); registerFam(lsGet('fam', FAM_HOME)); break;
+    case 'role': {
+      if (v !== 'mom') { lsSet('role', v); view = 'today'; render(); registerFam(lsGet('fam', FAM_HOME)); break; }
+      let pin = getIn(S, '/settings/pin');
+      if (pin === undefined || pin === null) {          // ممكن البيانات ما نزلت بعد — نسأل السحابة مباشرة
+        try { const r = await fetch(DB + '/settings/pin.json'); pin = await r.json(); } catch(e) { pin = undefined; }
+      }
+      if (pin) { ui.pinAsk = { tries: 0 }; layer(); }
+      else ui.pinSet = true, layer();
+      break; }
+    case 'pinCancel': ui.pinAsk = null; ui.pinSet = null; layer(); break;
+    case 'pinSetSave': {
+      const a = (document.getElementById('pin1').value || '').replace(/\D/g,'');
+      const b = (document.getElementById('pin2').value || '').replace(/\D/g,'');
+      if (a.length < 4) { toast('الرمز لازم ٤ أرقام على الأقل'); break; }
+      if (a !== b) { toast('الرمزان مو متطابقين'); break; }
+      put('/settings/pin', a);
+      ui.pinSet = null; lsSet('role', 'mom'); view = 'today'; layer(); render();
+      registerFam(lsGet('fam', FAM_HOME)); toast('✅ انحفظ الرمز السري');
+      break; }
+    case 'pinCheck': {
+      const v2 = (document.getElementById('pinIn').value || '').replace(/\D/g,'');
+      let pin = getIn(S, '/settings/pin');
+      if (pin === undefined || pin === null) { try { const r = await fetch(DB + '/settings/pin.json'); pin = await r.json(); } catch(e){} }
+      if (String(v2) === String(pin)) {
+        ui.pinAsk = null; lsSet('role', 'mom'); view = 'today'; layer(); render();
+        registerFam(lsGet('fam', FAM_HOME));
+      } else {
+        ui.pinAsk.tries++; layer();
+        toast(ui.pinAsk.tries >= 3 ? 'الرمز غلط — راجعي الأم' : 'الرمز غلط');
+      }
+      break; }
+    case 'pinChange': {
+      const a = prompt('الرمز السري الجديد (٤ أرقام أو أكثر):');
+      if (a === null) break;
+      const c = String(a).replace(/\D/g,'');
+      if (c.length < 4) { toast('الرمز لازم ٤ أرقام على الأقل'); break; }
+      put('/settings/pin', c); toast('✅ تغيّر الرمز السري'); break; }
     case 'switchRole': lsSet('role', null); ui.momDay = null; render(); break;
     case 'go': go(v); if (v === 'en') setTimeout(refreshTranslation, 0); break;
     case 'dayType': { const cur = typeOf(key); if (cur === v) break; put('/overrides/' + key, v); logEvent('غيّرت نوع يوم ' + dayName(new Date()) + ' إلى: ' + TYPES[v]); break; }
